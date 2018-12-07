@@ -1,0 +1,60 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+  pdf_document: default
+  word_document: default
+---
+```{r}
+library(FSelector)
+d <- read.csv("Loans.csv")
+weights <- information.gain(writeoff~.,d,unit="log2")
+print(weights)
+```
+```{r}
+library(rpart)
+class_tree <- rpart(writeoff~.,method="class", data=d)
+library(rpart.plot)
+rpart.plot(class_tree,uniform=TRUE,main="Tree of loans",  extra=108)
+```
+```{r}
+library(e1071)
+d2 <- read.csv("Loans_test.csv")
+
+totalData <- rbind(d, d2)
+for (f in 1:length(names(totalData))) {
+  levels(d2[, f]) <- levels(totalData[, f])
+}
+
+m <- svm(writeoff~.,data=d, kernel='linear', scale=TRUE)
+writeoff_pred <- predict(m,d2)
+writeoff_pred
+```
+```{r}
+mymodel <- glm(writeoff~.,data=d,family = binomial)
+summary(mymodel)
+predict.glm(mymodel,d2,type="response")
+```
+```{r}
+myprobs=predict(mymodel,d2,type="response")
+mypred=rep("NO",nrow(d2))
+mypred[myprobs>0.5] = "YES"
+mypred
+```
+```{r}
+x<-read.csv("Loans_test.csv")
+d1 <- dist(x,method="euclidean")
+hc <- hclust(d1)
+plot(hc)
+```
+```{r}
+library(caret)
+indxTrain <- createDataPartition(d$writeoff,p=0.75,list=F)
+training <- d[indxTrain]
+testing <- d[-indxTrain]
+ctrl <- trainControl(method="cv",number=10)
+library(e1071)
+impute(d)
+knnFit <- train(writeoff~age+net_income, data=d,method="knn",trControl=ctrl,tuneLength=20)
+knnFit
+```
